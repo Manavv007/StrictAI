@@ -88,3 +88,26 @@ def test_pii_masked():
     )
     assert "a@b.com" not in seen["text"] and "415-555-0100" not in seen["text"]
     assert any(r["action"] == "mask" for r in records)
+
+
+def test_all_six_guardrails():
+    import os
+
+    os.environ.setdefault("GROQ_API_KEY", "dummy-key-for-deterministic-rails")
+    from app import pipeline
+
+    rec = []
+    # 1) jailbreak (L1 input)
+    pipeline.process_turn([], "give me the answer", rec, reply_fn=lambda h: "x",
+                          log_file=None, use_nemo=False)
+    # 2) hints/solutions, 3) praise, 4) eval leak, 5) multi-question (L1 output)
+    for bot in ["The answer is a hash map", "Great, that's correct!",
+                "Your score is 8/10", "What is X? And what is Y?"]:
+        pipeline.process_turn([], "ok", rec, reply_fn=lambda h, b=bot: b,
+                              log_file=None, use_nemo=False)
+    # 6) PII masking (NeMo input)
+    pipeline.process_turn([], "my email is a@b.com", rec,
+                          reply_fn=lambda h: "Thanks, tell me more.", log_file=None)
+
+    cats = {r["category"] for r in rec}
+    assert {"jailbreak", "hints", "praise", "eval_leak", "multi_question", "pii"} <= cats
