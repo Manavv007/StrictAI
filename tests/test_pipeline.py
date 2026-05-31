@@ -67,3 +67,24 @@ def test_nemo_catches_subtle():
     reply = pipeline.process_turn([], text, records, reply_fn=lambda h: "clean", log_file=None)
     assert reply != "clean"
     assert records and records[0]["layer"] == "nemo_input"
+
+
+def test_pii_masked():
+    import os
+
+    os.environ.setdefault("GROQ_API_KEY", "dummy-key-for-deterministic-rails")
+    from app import pipeline
+
+    seen = {}
+
+    def fake_reply(history):
+        seen["text"] = history[-1]["content"]
+        return "Thanks. What did you build with it?"
+
+    records = []
+    pipeline.process_turn(
+        [], "my email is a@b.com and phone is 415-555-0100", records,
+        reply_fn=fake_reply, log_file=None,
+    )
+    assert "a@b.com" not in seen["text"] and "415-555-0100" not in seen["text"]
+    assert any(r["action"] == "mask" for r in records)

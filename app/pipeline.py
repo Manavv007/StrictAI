@@ -37,13 +37,17 @@ def process_turn(history, user_text, records, reply_fn=None, log_file=LOG_FILE,
         log_violation(records, "fast", m.rule, "block", m.category, user_text, log_file)
         return INPUT_REDIRECT
 
-    # L2 NeMo input (catches paraphrases L1 misses)
+    # L2 NeMo input (catches paraphrases L1 misses; also masks PII before the LLM)
     if use_nemo:
-        blocked, msg = input_check(user_text)
+        blocked, msg, masked = input_check(user_text)
         if blocked:
             log_violation(records, "nemo_input", "interview jailbreak check", "redirect",
                           "jailbreak", user_text, log_file)
             return msg or INPUT_REDIRECT
+        if masked and masked != user_text:
+            log_violation(records, "nemo_input", "mask sensitive data on input", "mask",
+                          "pii", user_text, log_file)
+            user_text = masked
 
     answer = reply_fn(history + [{"role": "user", "content": user_text}])
 

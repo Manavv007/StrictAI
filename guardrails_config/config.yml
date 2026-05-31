@@ -7,8 +7,19 @@ models:
       max_tokens: 256
 
 rails:
+  config:
+    sensitive_data_detection:
+      input:
+        entities:
+          - PERSON
+          - EMAIL_ADDRESS
+          - PHONE_NUMBER
+          - CREDIT_CARD
+          - US_SSN
+          - IP_ADDRESS
   input:
     flows:
+      - mask sensitive data on input
       - interview jailbreak check
   output:
     flows:
