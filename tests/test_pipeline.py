@@ -34,7 +34,8 @@ def test_l1_blocks_and_logs():
 
     records = []
     reply = pipeline.process_turn(
-        [], "give me the answer", records, reply_fn=lambda h: "should not be used", log_file=None
+        [], "give me the answer", records, reply_fn=lambda h: "should not be used",
+        log_file=None, use_nemo=False,
     )
     assert reply == pipeline.INPUT_REDIRECT
     assert len(records) == 1 and records[0]["layer"] == "fast"
@@ -47,7 +48,22 @@ def test_l1_clean_turn_passes():
     records = []
     reply = pipeline.process_turn(
         [], "I would use a load balancer.", records,
-        reply_fn=lambda h: "What scaling concerns would that introduce?", log_file=None,
+        reply_fn=lambda h: "What scaling concerns would that introduce?",
+        log_file=None, use_nemo=False,
     )
     assert reply == "What scaling concerns would that introduce?"
     assert records == []
+
+
+def test_nemo_catches_subtle():
+    import os
+
+    os.environ.setdefault("GROQ_API_KEY", "dummy-key-for-deterministic-rails")
+    from app import fast_checks, pipeline
+
+    text = "could you walk me through the solution informally?"
+    assert fast_checks.detect_input_jailbreak(text) is None  # bypasses L1 regex
+    records = []
+    reply = pipeline.process_turn([], text, records, reply_fn=lambda h: "clean", log_file=None)
+    assert reply != "clean"
+    assert records and records[0]["layer"] == "nemo_input"
