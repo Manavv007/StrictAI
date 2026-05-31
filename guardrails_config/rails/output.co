@@ -1,0 +1,8 @@
+define flow interview output policy check
+  $blocked = execute detect_interview_output_violation
+  if $blocked
+    bot refuse leak
+    stop
+
+define bot refuse leak
+  "I can't share hints, solutions, or feedback during the interview. Please continue with your own approach."

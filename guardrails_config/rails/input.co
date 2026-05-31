@@ -1,0 +1,8 @@
+define flow interview jailbreak check
+  $blocked = execute detect_interview_jailbreak
+  if $blocked
+    bot refuse jailbreak
+    stop
+
+define bot refuse jailbreak
+  "Let's keep the focus on the interview. Please answer the current question."
