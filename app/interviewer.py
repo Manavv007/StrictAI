@@ -19,6 +19,12 @@ SYSTEM_PROMPT = (
     "If you have no prior context, open with a one-line introduction and your first question."
 )
 
+FIRST_QUESTION = (
+    "I'm a technical interviewer for a software engineering role, and I'll be assessing your "
+    "skills through a series of questions. Can you explain the difference between a monolithic "
+    "architecture and a microservices architecture?"
+)
+
 _client = None
 
 
@@ -31,9 +37,11 @@ def _get_client():
 
 def reply(history):
     """history: list of {"role": "user"|"assistant", "content": str}. Returns assistant text."""
+    if not history:
+        return FIRST_QUESTION
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + list(history)
     resp = _get_client().chat.completions.create(
-        model=os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant"),
+        model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
         messages=messages,
         temperature=0.3,
         max_tokens=300,
