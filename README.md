@@ -19,8 +19,11 @@ Display  ◀── L2 NeMo output rails ◀── L1 fast regex ◀────�
 - **L1 — fast deterministic checks** (`app/fast_checks.py`): sub-ms regex/keyword. Blocks
   obvious jailbreaks and interviewer policy violations (hints, praise, eval leaks, multi-question).
 - **L2 — NeMo Guardrails** (`guardrails_config/`): Colang input/output rails + custom actions,
-  plus Presidio PII masking. Catches softer paraphrases L1 misses and masks personal data
-  **before it reaches the LLM**.
+  plus Presidio PII masking. After the regex pre-filter, an **LLM semantic judge** (the `main`
+  model in `config.yml`, default `llama-3.3-70b-versatile`) catches novel jailbreaks and answer
+  leaks the regex misses, and masks personal data **before it reaches the LLM**. The judge fails
+  **safe** (allow) on any error, so PII masking and offline runs are unaffected. Override the guard
+  model with the `GUARD_MODEL` env var.
 - **Fail modes**: input fails **open** (latency-friendly), output fails **closed** (safe redirect).
 
 ## The 6 guardrails demonstrated
@@ -69,8 +72,10 @@ Chat on the left; the **Guardrail activity** side panel on the right fills in as
 python -m pytest -q
 ```
 
-Most tests run offline with a dummy `GROQ_API_KEY` (the rails use deterministic actions +
-Presidio, so no live LLM call is needed). NeMo's first config load takes ~12s.
+Tests fail **safe**, so they pass offline with a dummy `GROQ_API_KEY`: the L1 checks and Presidio
+masking are deterministic, and the NeMo LLM judge falls back to "allow" if no working key is
+present. When a real `GROQ_API_KEY` **is** set, the rail tests make live judge calls (suite ~25s)
+and exercise the full semantic layer. NeMo's first config load takes ~12s.
 
 ## Porting into the LiveKit voice product
 

@@ -4,24 +4,18 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import streamlit as st
 from dotenv import load_dotenv
+load_dotenv()
+
+import streamlit as st
 
 from app import guardrails_client, pipeline
-
-load_dotenv()
 
 st.set_page_config(page_title="AI Interviewer — Guardrails Demo", layout="wide")
 st.title("AI Interviewer — Guardrails Demo")
 
-
-@st.cache_resource
-def _warm_rails():
-    return guardrails_client.get_rails()
-
-
 with st.spinner("Warming up guardrails (first load only)..."):
-    _warm_rails()
+    guardrails_client.get_rails()
 
 if "history" not in st.session_state:
     st.session_state.history = []

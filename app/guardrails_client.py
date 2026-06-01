@@ -26,7 +26,13 @@ _rails = None
 def get_rails():
     global _rails
     if _rails is None:
-        _rails = LLMRails(RailsConfig.from_path(CONFIG_PATH))
+        cfg = RailsConfig.from_path(CONFIG_PATH)
+        guard_model = os.environ.get("GUARD_MODEL")
+        if guard_model:
+            for m in cfg.models:
+                if m.type == "main":
+                    m.model = guard_model
+        _rails = LLMRails(cfg)
     return _rails
 
 
